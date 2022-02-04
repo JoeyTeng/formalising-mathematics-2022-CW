@@ -156,3 +156,9 @@ Suppose the Eulerian circuit $p$ visits $v$ $k$ times. Each time it visits $v$, 
 ### Graph with All Vertices of Even Degrees is Eulerian
 
 > omitted for now.
+
+## Reflection
+
+Clearly I am not capable to do such a project yet, as `simple_graph` module involves a lot of type manipulations, jumping between Type, Sort and values. Proofs also involves many computations which is hard to be done solely by manipulating terms without constructing a specific thing that satisfy the condition. With these being said, `simple_graph` is far from what is being covered in the course, and thus a lot of extra efforts must be put to generate more meaningful results, which is definitely not enough in my naive attempt.
+
+Many partial proofs are left in the document with my attempts, involving `sorry`s to make the file compile. If possible, I will explore further in this field in future coursework to prove them thoroughly. As future works, I hope Lean can be used to prove correctness or other properties of classical algorithms formally.
