@@ -241,13 +241,14 @@ end
 
 /-!### Example: Seven Bridges of Königsberg
 
-  A modified version of "Seven Bridges of Königsberg", which is now
-  a Euler Graph.
+  A modified version of "Seven Bridges of Königsberg", which now contains a Euler path.
+
   Two duplicated edges (bridges) are removed from the original graph.
 -/
 section Konigsberg
 
 /- Four sectors -/
+@[derive decidable_eq]
 inductive sector_
 | v1 : sector_
 | v2 : sector_
@@ -266,12 +267,79 @@ def bridge_ : sector_ → sector_ → Prop
 | sector_.v3 sector_.v1 := false
 | _ _ := true
 
-def graph_ : simple_graph sector_ := simple_graph.from_rel bridge_
+/-
+  A Euler Graph
 
-example {G' : simple_graph sector_}:
-   G' = graph_ → G.is_eulerian :=
+    v1
+   / \
+  v2  v4
+   \ /
+    v3
+-/
+def bridge_2 : sector_ → sector_ → Prop
+| sector_.v1 sector_.v3 := false
+| sector_.v3 sector_.v1 := false
+| sector_.v2 sector_.v4 := false
+| sector_.v4 sector_.v2 := false
+| _ _ := true
+
+def graph_ : simple_graph sector_ := simple_graph.from_rel bridge_
+def graph_2 : simple_graph sector_ := simple_graph.from_rel bridge_2
+
+example : sector_.v1 ≠ sector_.v4 :=
 begin
-  sorry,
+  exact dec_trivial
+end
+
+example {G : simple_graph sector_}:
+   G = graph_2 → G.is_eulerian :=
+begin
+  intro h,
+  have v1 := sector_.v1,
+  have v2 := sector_.v2,
+  have v3 := sector_.v3,
+  have v4 := sector_.v4,
+  rw is_eulerian,
+  use v4,
+  have p' : G.walk v4 v4 := walk.nil,
+  have e14 : G.adj v1 v4,
+  { rw h,
+    split,
+    { sorry, },
+    { have h_ := bridge_2(v1)(v4),
+      sorry,
+    },
+  },
+  have e21 : G.adj v2 v1,
+  { sorry, }, -- same as e14
+  have e32 : G.adj v3 v2,
+  { sorry, },
+  have e43 : G.adj v4 v3,
+  { sorry, },
+  have p : G.walk v4 v4 := walk.cons e43 (walk.cons e32 (walk.cons e21 (walk.cons e14 p'))),
+  use p,
+  rw is_euler_circuit,
+  split,
+  {
+    split,
+    {
+      split,
+      rw list.nodup,
+      sorry,
+    },
+    {
+      intro h,
+      sorry, -- by the construction of p
+    },
+  },
+  intro e,
+  intro he,
+  have _set := G.edge_set,
+  induction e,
+  { cases e,
+    sorry,
+  },
+  { refl },
 end
 
 end Konigsberg
