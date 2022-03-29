@@ -1,10 +1,12 @@
 /-
-Copyright (c) 2015 Joey Teng. All rights reserved.
+Copyright (c) 2022 Joey Teng. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Author: Joey Teng.
 -/
 import tactic -- imports all the Lean tactics
 import combinatorics.simple_graph.connectivity
+import data.fintype.basic
+import data.fin_enum
 
 
 -- Graph Theory
@@ -30,27 +32,31 @@ lemma support_bypass_subset' {u v : V} (p : G.walk u v) : p.support ⊆
  p.bypass.support :=
 begin
   induction p,
-  { simp!, },
-  { simp! only,
+  { refl, },
+  {
+    simp! only,
     split_ifs,
     {
       have h : p_p.bypass.support ⊆ p_p.support,
       { exact support_bypass_subset p_p, },
-      by_cases hcases : p_u ∈ p_p.support,
-      {
-        intros v' h'',
-        cases h'',
-        { finish, },
-        {
-          sorry,
-          -- try to iterate through list, insert every V into a set (thus having a finite set)
-        },
-      },
-      { tauto, },
+      sorry,
+      -- by_cases hcases : p_u ∈ p_p.support,
+      -- {
+      --   intros v' h'',
+      --   cases h'',
+      --   { finish, },
+      --   {
+      --     dsimp at *,
+      --   },
+      -- },
+      -- { tauto, },
     },
-    { rw support_cons,
+    {
+      rw support_cons,
       apply list.cons_subset_cons,
-      assumption, }, },
+      assumption,
+    }
+  },
 end
 
 end walk
@@ -62,95 +68,29 @@ end walk
 Utilities about `walk`, `trail` and `path`.
 -/
 
-def subwalk_nil_from_vertex : Π {u : V}, G.walk u u
-| u := (walk.nil : G.walk u u)
-
-theorem is_trail_nil {v : V} (p : G.walk v v): p = walk.nil → p.is_trail :=
-begin
-  intro hp,
-  rw hp,
-  simp,
-end
-
 /-!
 ## Reachable
 
 Based on `simple_graph.walk`
 -/
 
-/-- Exists an walk in `G` from `v` to `w` --/
-def reachable (v w : V) : Prop :=
-  ∃ p : G.walk v w, true
-
-theorem reachable_def {v w : V} :
-  G.reachable v w ↔ ∃ ⦃p : G.walk v w⦄, true :=
-begin
-  refl,
-end
-
-theorem reachable_if_walk {v w : V} (p : G.walk v w):
-  G.reachable v w :=
-begin
-  use p,
-end
-
-/-- `v` is always reachable to itself --/
-@[simp]
-theorem reachable_self {v : V} : G.reachable v v :=
-begin
-  use walk.nil,
-end
-
-@[simp]
-theorem reachable_trans {u v w : V} :
-  G.reachable u v → G.reachable v w → G.reachable u w :=
-begin
-  intros h1 h2,
-  cases h1 with p1 hp1,
-  cases h2 with p2 hp2,
-  have p := p1.append p2,
-  use p,
-end
-
-@[simp]
-theorem reachable_symm {u v : V} :
-  G.reachable u v ↔ G.reachable v u :=
-begin
-  split;
-  intro h;
-  cases h with p _;
-  use p.reverse,
-end
-
-@[simp]
-theorem reachable_adj {v w : V} : G.adj v w → G.reachable v w :=
-begin
-  intro h,
-  have p : G.walk v w,
-  { constructor,
-    assumption,
-    exact walk.nil, },
-  use p,
-end
-
 theorem reachable_if_passing {u v w : V} (p : G.walk u w) (hp : v ∈ p.support) [decidable_eq V]:
   G.reachable v w :=
 begin
-  rw reachable_def,
   fconstructor,
   {
     let p' : G.walk u w := p.to_path,
     have hp' : v ∈ p'.support,
     {
-      apply walk.support_bypass_subset',
-      exact hp,
+      sorry,
+      -- apply walk.support_bypass_subset',
+      -- exact hp,
     },
     have hp'' : p'.is_path,
     { exact walk.bypass_is_path p, },
     let q : G.walk v w := p'.drop_until v hp',
     use q,
   },
-  { triv },
 end
 
 theorem reachable_if_support {u v w x : V} (p : G.walk u x) (h1 : v ∈ p.support) (h2 : w ∈ p.support) [decidable_eq V]:
@@ -161,10 +101,7 @@ begin
   have h'' : G.reachable w x,
   { apply reachable_if_passing G p h2, },
   have h''' : G.reachable x w,
-  {
-    rw G.reachable_symm at h'',
-    exact h'',
-  },
+  { exact simple_graph.reachable.symm (h''), },
 
   -- Unsure how to use "reachable_trans", thus copy over
   cases h' with p1 hp1,
@@ -218,14 +155,14 @@ end
 def is_connected : Prop :=
   ∀ ⦃v w : V⦄, G.reachable v w
 
-/-- Complete Graph is connected.
-  Note that empty graph may not, unless `V` is empty. --/
-theorem complete_graph_is_connected : G = ⊤ → G.is_connected :=
+/-- Non-empty Complete Graph is connected. --/
+theorem complete_graph_is_connected : nonempty V ∧ G = ⊤ → G.connected :=
 begin
-  intros hG v w,
+  intro hG,
+  fconstructor,
+  intros v w,
   by_cases eq : v = w,
-  { rw eq,
-    exact G.reachable_self, },
+  { rw eq, },
   { rw ← ne at eq,
     have p : G.walk v w,
     {
@@ -236,6 +173,7 @@ begin
     rw reachable,
     use p,
   },
+  exact hG.left,
 end
 
 /-!## Eulerian Walks-/
