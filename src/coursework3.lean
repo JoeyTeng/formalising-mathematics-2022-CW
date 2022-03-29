@@ -26,19 +26,8 @@ theorem reachable_if_passing {u v w : V} (p : G.walk u w) (hp : v ∈ p.support)
   G.reachable v w :=
 begin
   fconstructor,
-  {
-    let p' : G.walk u w := p.to_path,
-    have hp' : v ∈ p'.support,
-    {
-      sorry,
-      -- apply walk.support_bypass_subset',
-      -- exact hp,
-    },
-    have hp'' : p'.is_path,
-    { exact walk.bypass_is_path p, },
-    let q : G.walk v w := p'.drop_until v hp',
-    use q,
-  },
+  let q : G.walk v w := p.drop_until v hp,
+  use q,
 end
 
 theorem reachable_if_support {u v w x : V} (p : G.walk u x) (h1 : v ∈ p.support) (h2 : w ∈ p.support) [decidable_eq V]:
