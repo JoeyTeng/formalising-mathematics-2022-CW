@@ -17,58 +17,6 @@ namespace simple_graph
 variables {V : Type u} (G : simple_graph V)
 
 /-!
-## Suppliments / Refinement to Connectivity
-
--/
-namespace walk
-variables {G} [decidable_eq V]
-
-lemma support_drop_until_in {v w : V} (p : G.walk v w) (u : V) (h : u ∈ p.support): u ∈ (p.drop_until u h).support :=
-begin
-  finish,
-end
-
-lemma support_bypass_subset' {u v : V} (p : G.walk u v) : p.support ⊆
- p.bypass.support :=
-begin
-  induction p,
-  { refl, },
-  {
-    simp! only,
-    split_ifs,
-    {
-      have h : p_p.bypass.support ⊆ p_p.support,
-      { exact support_bypass_subset p_p, },
-      sorry,
-      -- by_cases hcases : p_u ∈ p_p.support,
-      -- {
-      --   intros v' h'',
-      --   cases h'',
-      --   { finish, },
-      --   {
-      --     dsimp at *,
-      --   },
-      -- },
-      -- { tauto, },
-    },
-    {
-      rw support_cons,
-      apply list.cons_subset_cons,
-      assumption,
-    }
-  },
-end
-
-end walk
-
-
-/-!
-## Connectivity
-
-Utilities about `walk`, `trail` and `path`.
--/
-
-/-!
 ## Reachable
 
 Based on `simple_graph.walk`
