@@ -26,9 +26,7 @@ Based on `simple_graph.walk`
 theorem reachable_if_passing {u v w : V} (p : G.walk u w) (hp : v ∈ p.support) [decidable_eq V]:
   G.reachable v w :=
 begin
-  fconstructor,
-  let q : G.walk v w := p.drop_until v hp,
-  use q,
+  use p.drop_until v hp,
 end
 
 theorem reachable_if_support {u v w x : V} (p : G.walk u x) (h1 : v ∈ p.support) (h2 : w ∈ p.support) [decidable_eq V]:
