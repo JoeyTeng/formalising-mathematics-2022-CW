@@ -5,6 +5,7 @@ Author: Joey Teng.
 -/
 import tactic -- imports all the Lean tactics
 import combinatorics.simple_graph.connectivity
+import combinatorics.simple_graph.subgraph
 import data.fintype.basic
 import data.fin_enum
 
@@ -140,6 +141,33 @@ begin
   { tauto, },
   exact G.reachable_if_support p hv hw,
 end
+
+def subgraph.from_walk {u v : V} [decidable_rel G.adj] (p : G.walk u v): subgraph G :=
+  {
+    verts := {w : V | w ∈ p.support},
+    adj := λ w x, ⟦(w, x)⟧ ∈ p.edges,
+    adj_sub :=
+    begin
+      intro w,
+      intro x,
+      apply walk.edges_subset_edge_set p,
+    end,
+    edge_vert :=
+    begin
+      intro w,
+      intro x,
+      norm_num,
+      exact walk.mem_support_of_mem_edges p,
+    end,
+    symm :=
+    begin
+      intro u,
+      intro v,
+      norm_num,
+      rw sym2.eq_swap,
+      norm_num,
+    end,
+  }
 
 theorem eulerian_all_even_degree [decidable_rel G.adj] [fintype V] :
   G.is_eulerian → ∀ (v : V), even (G.degree v):=
