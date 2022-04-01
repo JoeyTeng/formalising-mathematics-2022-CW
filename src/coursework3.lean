@@ -10,6 +10,7 @@ import combinatorics.simple_graph.subgraph
 import data.fintype.basic
 import data.fin_enum
 
+-- set_option trace.eqn_compiler.elim_match true -- Debug only
 
 -- Graph Theory
 
@@ -86,6 +87,168 @@ begin
   },
 end
 
+/-!
+## Subgraph from walk
+
+-/
+
+def subgraph.from_walk {u v : V} (p : G.walk u v) : subgraph G :=
+  {
+    verts := {w : V | w ∈ p.support},
+    adj := λ w x, ⟦(w, x)⟧ ∈ p.edges,
+    adj_sub :=
+    begin
+      intro w,
+      intro x,
+      apply walk.edges_subset_edge_set p,
+    end,
+    edge_vert :=
+    begin
+      intro w,
+      intro x,
+      norm_num,
+      exact walk.mem_support_of_mem_edges p,
+    end,
+    symm :=
+    begin
+      intro u,
+      intro v,
+      norm_num,
+      rw sym2.eq_swap,
+      norm_num,
+    end,
+  }
+
+def subgraph_from_walk_retain_vertex {u v w : V} (p : G.walk u v) (hw : w ∈ p.support) :
+  ((subgraph.from_walk G p).verts) := ⟨w, hw⟩
+
+lemma walk.support_cons_mem_snd {u v w : V} (adj : G.adj u v) (p : G.walk v w) :
+  (walk.cons adj p).get_vert 1 ∈ (walk.cons adj p).support :=
+begin
+  unfold walk.get_vert,
+  finish,
+end
+
+def subgraph.coe_vertex_if_mem {G' : subgraph G} (u : V) (h : u ∈ G'.verts) :
+  G'.verts := by { use u, exact h, }
+
+lemma subgraph.coe_vertex_if_mem_coe {G' : subgraph G} (u : V) (h : u ∈ G'.verts) :
+  let u' : V := subgraph.coe_vertex_if_mem G u h in u' = u := by fconstructor
+
+theorem subgraph.vert_mem_if_mem_walk_cons {G' : subgraph G} {u w : G'.verts} {v : V}
+  (adj : G.adj u v) (p : G.walk v w)
+  (hp : (∀ (e ∈ (walk.cons adj p).edges), e ∈ G'.edge_set)) :
+  v ∈ G'.verts :=
+begin
+  let e_sym2 : sym2 V := ⟦(u, v)⟧,
+  have he : e_sym2 ∈ G.edge_set,
+  {
+    rw simple_graph.mem_edge_set,
+    exact adj,
+  },
+  have he' : e_sym2 ∈ (walk.cons adj p).edges, by finish,
+
+  specialize hp e_sym2,
+  specialize hp he',
+  have hv' : v ∈ e_sym2,
+  {
+    rw sym2.mem_iff,
+    right,
+    refl,
+  },
+  exact subgraph.mem_verts_if_mem_edge hp hv',
+end
+
+theorem subgraph.coe_adj_from_walk {G' : subgraph G} {u w : G'.verts} {v : V}
+  (adj : G.adj u v) (p : G.walk v w)
+  (hp : (∀ (e ∈ (walk.cons adj p).edges), e ∈ G'.edge_set)) :
+  G'.coe.adj u
+    (subgraph.coe_vertex_if_mem G v
+      (subgraph.vert_mem_if_mem_walk_cons G adj p hp)) :=
+begin
+  let e_sym2 : sym2 V := ⟦(u, v)⟧,
+  have he : e_sym2 ∈ G.edge_set,
+  {
+    rw simple_graph.mem_edge_set,
+    exact adj,
+  },
+  have he' : e_sym2 ∈ (walk.cons adj p).edges, by finish,
+
+  norm_num,
+  rw ← subgraph.mem_edge_set,
+  specialize hp e_sym2,
+  apply hp,
+  exact he',
+end
+
+theorem subgraph.walk_edge_mem_if_append {G' : subgraph G} {u v w : V}
+  (adj : G.adj u v) (p_tail : (G.walk v w))
+  (hp : (∀ (e ∈ (walk.cons adj p_tail).edges), e ∈ G'.edge_set)) :
+  ∀ (e ∈ p_tail.edges), e ∈ G'.edge_set := by finish
+
+/- TODO:
+ - Try induction over  ℕ ?
+ - Try induction over list G.dart then convert back to walk ?
+def subgraph.coe_walk {G' : subgraph G} :
+  Π /- [decidable_eq G'.verts] -/ (u v : G'.verts) (p : G.walk u v) (hp : (∀ (e ∈ p.edges), e ∈ G'.edge_set)),
+  (G'.coe.walk u v)
+| _ _ walk.nil hp :=
+  -- have walk.nil.length = 0, {
+  --   norm_num,
+  -- },
+  by refl
+| _ w (@walk.cons _ _ _ v _ adj p) hp :=
+  let v' : G'.verts := subgraph.coe_vertex_if_mem G v
+    (subgraph.vert_mem_if_mem_walk_cons G adj p hp) in
+    let v'' : V := v' in
+      let p' : G.walk v'' w := p in
+        let hp' := subgraph.walk_edge_mem_if_append G adj p hp in
+          have k_lt : p'.length < (walk.cons adj p).length, by norm_num,
+          -- let k' := p'.length in
+          --   let k := (walk.cons adj p).length in
+          --     have k_p1 : k = k' + 1, by refl,
+          --       have k_lt : k' < k, by linarith,
+          -- let k' := hp_size G p' hp' in
+          --   let k := hp_size G (walk.cons adj p) hp in
+        -- have hp_size_lt : hp_size G p' hp' < hp_size G (walk.cons adj p) hp,
+        -- { unfold hp_size, norm_num, },
+        --   have hp_size_m1 : hp_size G p' hp' + 1 = hp_size G (walk.cons adj p) hp,
+        --   { unfold hp_size, norm_num, },
+            walk.cons
+              (subgraph.coe_adj_from_walk G adj p hp)
+              (subgraph.coe_walk v' w p' hp')
+
+-- using_well_founded {rel_tac := λ _ _, `[exact ⟨_, measure_wf (hp_size G)⟩]}
+-- using_well_founded {rel_tac := λ a b, `[exact ⟨_, λ x, sizeof_measure_wf x⟩]}
+-- using_well_founded {rel_tac := λ _ _, `[exact ⟨_, measure_wf (λ a, hp_size G a.3 a.3)⟩]}
+-- using_well_founded {dec_tac := `[exact show k' < k, by { unfold hp_size, norm_num, }]}
+-- using_well_founded {rel_tac := λ exp l, `[begin
+--   fconstructor,
+--   {
+--     intro h,
+--     cases h,
+--     cases h_fst with v hv,
+--     cases h_snd,
+--     cases h_snd_fst with u hu,
+--     cases h_snd_snd with p hp,
+--     dsimp at *,
+--     intro h',
+--     cases h' with h_fst' h_snd',
+--     cases h_fst' with v' hv',
+--     cases h_snd' with h_snd_fst' h_snd_snd',
+--     cases h_snd_fst' with u' hu',
+--     cases h_snd_snd' with p' hp',
+--     -- use p'.length < p.length,
+--   },
+-- end]}
+-- using_well_founded {dec_tac := `[begin
+--   let k := (walk.cons adj p).length,
+--   let k' := p.length,
+
+-- end]}
+-/
+
+
 /-!## Connected-/
 
 /-- All vertices are reachable to each other --/
@@ -139,66 +302,6 @@ begin
   have hw : w ∈ p.support,
   { tauto, },
   exact G.reachable_if_support p hv hw,
-end
-
-def subgraph.from_walk {u v : V} [decidable_rel G.adj] (p : G.walk u v): subgraph G :=
-  {
-    verts := {w : V | w ∈ p.support},
-    adj := λ w x, ⟦(w, x)⟧ ∈ p.edges,
-    adj_sub :=
-    begin
-      intro w,
-      intro x,
-      apply walk.edges_subset_edge_set p,
-    end,
-    edge_vert :=
-    begin
-      intro w,
-      intro x,
-      norm_num,
-      exact walk.mem_support_of_mem_edges p,
-    end,
-    symm :=
-    begin
-      intro u,
-      intro v,
-      norm_num,
-      rw sym2.eq_swap,
-      norm_num,
-    end,
-  }
-
-theorem eulerian_all_even_degree [decidable_rel G.adj] [fintype V] :
-  G.is_eulerian → ∀ (v : V), even (G.degree v):=
-begin
-  intro h,
-  cases h with u hu,
-  cases hu with p hp,
-  obtain ⟨hp, he, hV⟩ := hp,
-
-  intro v,
-  have hv : v ∈ p.support,
-  { apply hV, },
-  let pe := p.edges,
-  let deg := G.degree v,
-  have hdeg : even deg,
-  {
-    -- Either
-    -- - v == u, thus list's first sym2 has a v, and last sym2 has a v
-    -- - v != u, thus
-      -- for each (sym2 V), i-th element is (_, v) → i+1-th element is (v, __)
-      -- hence (sym2 V) comes in pairs
-      -- thus degree is even.
-    sorry,
-  },
-  exact hdeg,
-end
-
-/-Euler's Theorem-/
-theorem is_eulerian_iff_all_even_degree [decidable_rel G.adj] [fintype V] :
-  is_connected G ∧ ∀ (v : V), even (G.degree v) ↔ G.is_eulerian :=
-begin
-  sorry
 end
 
 
