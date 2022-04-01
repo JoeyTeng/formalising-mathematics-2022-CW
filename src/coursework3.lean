@@ -24,11 +24,11 @@ variables {V : Type u} (G : simple_graph V)
 Based on `simple_graph.walk`
 -/
 
+theorem reachable_from_walk {u v : V} (p : G.walk u v)[decidable_eq V]:
+  G.reachable u v := by use p
+
 theorem reachable_if_passing {u v w : V} (p : G.walk u w) (hp : v ∈ p.support) [decidable_eq V]:
-  G.reachable v w :=
-begin
-  use p.drop_until v hp,
-end
+  G.reachable v w := by use p.drop_until v hp
 
 theorem reachable_if_support {u v w x : V} (p : G.walk u x) (h1 : v ∈ p.support) (h2 : w ∈ p.support) [decidable_eq V]:
   G.reachable v w :=
