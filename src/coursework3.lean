@@ -5,6 +5,7 @@ Author: Joey Teng.
 -/
 import tactic -- imports all the Lean tactics
 import combinatorics.simple_graph.connectivity
+import combinatorics.simple_graph.degree_sum
 import combinatorics.simple_graph.subgraph
 import data.fintype.basic
 import data.fin_enum
