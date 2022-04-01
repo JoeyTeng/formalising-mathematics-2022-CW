@@ -378,31 +378,20 @@ begin
   have v2_eq : v2 = sector_.v2 := by refl,
   have v3_eq : v3 = sector_.v3 := by refl,
   have v4_eq : v4 = sector_.v4 := by refl,
+
   rw is_eulerian,
   use v4,
   let p' : graph_2.walk v4 v4 := walk.nil,
-  have e14 : graph_2.adj v1 v4,
-  {
+  have e14 : graph_2.adj v1 v4, swap,
+  have e21 : graph_2.adj v2 v1, swap,
+  have e32 : graph_2.adj v3 v2, swap,
+  have e43 : graph_2.adj v4 v3, swap,
+  -- prove everything in one go
+  repeat {
     fconstructor;
     { exact dec_trivial, },
   },
-  have e21 : graph_2.adj v2 v1,
-  {
-    fconstructor;
-    { exact dec_trivial, },
 
-  }, -- same as e14
-  have e32 : graph_2.adj v3 v2,
-  {
-    fconstructor;
-    { exact dec_trivial, },
-
-  },
-  have e43 : graph_2.adj v4 v3,
-  {
-    fconstructor;
-    { exact dec_trivial, },
-  },
   let p : graph_2.walk v4 v4 := walk.cons e43 (walk.cons e32 (walk.cons e21 (walk.cons e14 p'))),
   -- END of circuit construction
   use p,
@@ -431,8 +420,7 @@ begin
     intros a b,
     have tmp_rw_a : (a, b).fst = a, by exact rfl,
     have tmp_rw_b : (a, b).snd = b, by exact rfl,
-    rw tmp_rw_a,
-    rw tmp_rw_b,
+    rw [tmp_rw_a, tmp_rw_b],
     clear tmp_rw_a tmp_rw_b,
     unfold walk.edges,
     intro hadj,
@@ -453,157 +441,22 @@ begin
         norm_num at hd,
         repeat { rw not_or_distrib at hd, },
         repeat { rw dart.ext_iff at hd ⊢, },
-        -- dsimp at hd h_contra,
         simp at hd ⊢,
 
         unfold graph_2 at hadj,
         rw from_rel_adj at hadj,
         obtain ⟨neq, hadj'⟩ := hadj,
-        obtain ⟨n43, n32, n21, n14⟩ := hd,
-        -- obtain ⟨n34, n23, n12, n41⟩ := h_contra,
-        by_cases ha : a = v1,
-        {
-          right, right, left,
-          by_contra h_contra,
-          rw [not_and_distrib, ha] at h_contra,
-          norm_num at h_contra,
-          have hbn1 : ¬b = v1,
-          {
-            rw ha at neq,
-            dsimp at neq,
-            rw eq_comm at neq,
-            exact neq,
+        fin_cases a,
+        repeat {
+          fin_cases b,
+          repeat {
+            rw [v1_eq, v2_eq, v3_eq, v4_eq] at hd ⊢,
+            norm_num at *,
           },
-          have hbn4 : ¬b = v4, by exact n14 ha,
-          have hbn2 := h_contra,
-          have hbn3 : ¬b = v3,
           {
-            by_contra bv3,
-            rw [ha, bv3, v1_eq, v3_eq] at hadj',
             unfold bridge_2 at hadj',
             norm_num at hadj',
           },
-          -- eliminate as has checked exhaustively; similar / same block has been used 5 times.
-          clear_except v1_eq v2_eq v3_eq v4_eq hbn1 hbn2 hbn3 hbn4,
-          have hb : ¬ b = v1 ∧ ¬ b = v2 ∧ ¬ b = v3 ∧ ¬ b = v4, by tauto,
-          rw [v1_eq, v2_eq, v3_eq, v4_eq] at hb,
-          clear_except hb,
-          repeat {rw ← not_or_distrib at hb, },
-          let verts : finset sector_ := sector_.fintype.elems,
-          have hb' : b ∈ verts, by apply sector_.fintype.complete,
-          repeat { cases hb', };
-          norm_num at hb,
-        },
-        by_cases ha2 : a = v2,
-        {
-          right, left,
-          by_contra h_contra,
-          rw [not_and_distrib, ha2] at h_contra,
-          norm_num at h_contra,
-          have hbn2 : ¬b = v2,
-          {
-            rw ha2 at neq,
-            dsimp at neq,
-            rw eq_comm at neq,
-            exact neq,
-          },
-          have hbn1 : ¬b = v1, by exact n21 ha2,
-          have hbn3 := h_contra,
-          have hbn4 : ¬b = v4,
-          {
-            by_contra bv4,
-            rw [ha2, bv4, v2_eq, v4_eq] at hadj',
-            unfold bridge_2 at hadj',
-            norm_num at hadj',
-          },
-          -- eliminate as has checked exhaustively; same as above
-          clear_except v1_eq v2_eq v3_eq v4_eq hbn1 hbn2 hbn3 hbn4,
-          have hb : ¬ b = v1 ∧ ¬ b = v2 ∧ ¬ b = v3 ∧ ¬ b = v4, by tauto,
-          rw [v1_eq, v2_eq, v3_eq, v4_eq] at hb,
-          clear_except hb,
-          repeat {rw ← not_or_distrib at hb, },
-          let verts : finset sector_ := sector_.fintype.elems,
-          have hb' : b ∈ verts, by apply sector_.fintype.complete,
-          repeat { cases hb', };
-          norm_num at hb,
-        },
-        by_cases ha3 : a = v3,
-        {
-          left,
-          by_contra h_contra,
-          rw [not_and_distrib, ha3] at h_contra,
-          norm_num at h_contra,
-          have hbn3 : ¬b = v3,
-          {
-            rw ha3 at neq,
-            dsimp at neq,
-            rw eq_comm at neq,
-            exact neq,
-          },
-          have hbn2 : ¬b = v2, by exact n32 ha3,
-          have hbn4 := h_contra,
-          have hbn1 : ¬b = v1,
-          {
-            by_contra bv1,
-            rw [ha3, bv1, v3_eq, v1_eq] at hadj',
-            unfold bridge_2 at hadj',
-            norm_num at hadj',
-          },
-          -- eliminate as has checked exhaustively; same as above
-          clear_except v1_eq v2_eq v3_eq v4_eq hbn1 hbn2 hbn3 hbn4,
-          have hb : ¬ b = v1 ∧ ¬ b = v2 ∧ ¬ b = v3 ∧ ¬ b = v4, by tauto,
-          rw [v1_eq, v2_eq, v3_eq, v4_eq] at hb,
-          clear_except hb,
-          repeat {rw ← not_or_distrib at hb, },
-          let verts : finset sector_ := sector_.fintype.elems,
-          have hb' : b ∈ verts, by apply sector_.fintype.complete,
-          repeat { cases hb', };
-          norm_num at hb,
-        },
-        by_cases ha4 : a = v4,
-        {
-          repeat { right, },
-          by_contra h_contra,
-          rw [not_and_distrib, ha4] at h_contra,
-          norm_num at h_contra,
-          have hbn4 : ¬b = v4,
-          {
-            rw ha4 at neq,
-            dsimp at neq,
-            rw eq_comm at neq,
-            exact neq,
-          },
-          have hbn3 : ¬b = v3, by exact n43 ha4,
-          have hbn1 := h_contra,
-          have hbn2 : ¬b = v2,
-          {
-            by_contra bv2,
-            rw [ha4, bv2, v4_eq, v2_eq] at hadj',
-            unfold bridge_2 at hadj',
-            norm_num at hadj',
-          },
-          -- eliminate as has checked exhaustively; same as above
-          clear_except v1_eq v2_eq v3_eq v4_eq hbn1 hbn2 hbn3 hbn4,
-          have hb : ¬ b = v1 ∧ ¬ b = v2 ∧ ¬ b = v3 ∧ ¬ b = v4, by tauto,
-          rw [v1_eq, v2_eq, v3_eq, v4_eq] at hb,
-          clear_except hb,
-          repeat {rw ← not_or_distrib at hb, },
-          let verts : finset sector_ := sector_.fintype.elems,
-          have hb' : b ∈ verts, by apply sector_.fintype.complete,
-          repeat { cases hb', };
-          norm_num at hb,
-        },
-        {
-          -- eliminate as has checked exhaustively; similar to above
-          clear_except v1_eq v2_eq v3_eq v4_eq ha ha2 ha3 ha4,
-          have ha : ¬ a = v1 ∧ ¬ a = v2 ∧ ¬ a = v3 ∧ ¬ a = v4, by tauto,
-          rw [v1_eq, v2_eq, v3_eq, v4_eq] at ha,
-          clear_except ha,
-          repeat {rw ← not_or_distrib at ha, },
-          let verts : finset sector_ := sector_.fintype.elems,
-          have ha' : a ∈ verts, by apply sector_.fintype.complete,
-          repeat { cases ha', };
-          norm_num at ha,
         },
       },
       use d',
@@ -619,22 +472,10 @@ begin
   {
     intro u,
     norm_num,
-    cases u,
-    {
-      right, right, right, left,
-      refl,
-    },
-    {
-      right, right, left,
-      refl,
-    },
-    {
-      right, left,
-      refl,
-    },
-    {
-      left,
-      refl,
+    fin_cases u,
+    repeat {
+      rw [v1_eq, v2_eq, v3_eq, v4_eq] at ⊢,
+      norm_num,
     },
   },
 end
